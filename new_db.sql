@@ -424,69 +424,14 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-CREATE DEFINER=`root`@`localhost` PROCEDURE `admin_filter_company`(IN i_comName VARCHAR(50), 
-IN i_minCity INT, IN i_maxCity INT, IN i_minTheater INT, IN i_maxTheater INT, IN i_minEmployee INT, 
-IN i_maxEmployee INT, IN i_sortBy ENUM("comName", "numCityCover", "numTheater", "numEmployee",""), 
-IN i_sortDirection ENUM("ASC", "DESC",""))
+CREATE DEFINER=`root`@`localhost` PROCEDURE `admin_decline_user`(IN i_username VARCHAR(50))
 BEGIN
-		DROP TABLE IF EXISTS AdFilterCom;
-    	CREATE TABLE AdFilterCom 
-    	SELECT companyName AS comName, 
-		(SELECT count(theater_city) FROM theater WHERE companyName = theater_owned_by) as numCityCover ,
-		(SELECT count(manager_name) FROM manager WHERE companyName = manager_works_in) as numEmployee,
-		(SELECT count(theater_name) FROM theater WHERE companyName = theater_owned_by) as numTheater
-		FROM company GROUP BY companyName;
-        
-        
-        SELECT comName, numCityCover, numEmployee, numTheater
-        FROM AdFilterCom
-        WHERE (comName = i_comName OR i_comName = "ALL") 	
-		AND  ((i_minCity IS NULL OR numCityCover >= i_minCity)
-		AND (i_maxCity IS NULL OR numCityCover <= i_maxCity)
-    	AND (i_minTheater IS NULL OR numTheater >= i_minTheater)
-        AND (i_maxTheater IS NULL OR numTheater <= i_maxTheater)
-        AND (i_minEmployee IS NULL OR numEmployee  >= i_minEmployee)
-    	AND (i_maxEmployee IS NULL OR numEmployee  <= i_maxEmployee))
- 		ORDER BY
-    	CASE
-     	WHEN i_sortBy = "comName" AND i_sortDirection = "ASC"
-     	THEN comName END ASC,
-     	CASE
-    	WHEN i_sortBy = "comName" AND i_sortDirection = "DESC"
-    	THEN comName END DESC,
-     	CASE
-      	WHEN i_sortBy = "comName" AND i_sortDirection IS NULL
-     	THEN comName END DESC,
-     	CASE
-       	WHEN i_sortBy = "numCityCover" AND i_sortDirection = "ASC"
-   	THEN numCityCover END ASC,
-     	CASE
-      	WHEN i_sortBy = "numCityCover" AND i_sortDirection = "DESC"
-    	THEN numCityCover END DESC,
-     	CASE
-      	WHEN i_sortBy = "numCityCover" AND i_sortDirection IS NULL
-     	THEN numCityCover END DESC,
-     	CASE
-       	WHEN i_sortBy = "numTheater" AND i_sortDirection = "ASC"
-     	THEN numTheater END ASC,
-    	CASE
-     	WHEN i_sortBy = "numTheater" AND i_sortDirection = "DESC"
-    	THEN numTheater END DESC,
-     	CASE
-      	WHEN i_sortBy = "numTheater" AND i_sortDirection IS NULL 
-   	THEN numTheater END ASC,
-      	CASE
-      	WHEN i_sortBy = "numEmployee" AND i_sortDirection = "ASC"
-     	THEN numEmployee END ASC,
-      	CASE
-      	WHEN i_sortBy = "numEmployee" AND i_sortDirection = "DESC"
-     	THEN numEmployee END DESC,
-      	CASE
-     	WHEN i_sortBy = "numEmployee" AND i_sortDirection IS NULL
-     	THEN numEmployee END DESC,
-     	CASE
-     	WHEN i_sortBy IS NULL AND i_sortDirection IS NULL
-    	THEN comName END DESC;
+	IF (i_username IN (SELECT user_name FROM user))
+	THEN 
+	UPDATE user	
+	SET user_status = "Declined"
+WHERE user_name = i_username;
+END IF;
 END ;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -507,15 +452,14 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `admin_filter_company`(IN i_comName 
 IN i_maxCity INT, IN i_minTheater INT, IN i_maxTheater INT, IN i_minEmployee INT, IN i_maxEmployee INT, IN i_sortBy ENUM("comName", "numCityCover", "numTheater", "numEmployee",""), IN i_sortDirection ENUM("ASC", "DESC",""))
 BEGIN
     	DROP TABLE IF EXISTS AdFilterCom;
-    	CREATE TABLE AdFilterCom 
-			(SELECT *,
-			(SELECT count(DISTINCT theater_city, theater_state) FROM theater WHERE theater_owned_by = companyName) as numCityCovered,
-			(SELECT count(theater_name) FROM theater WHERE theater_owned_by = companyName) as numTheaters,
-			(SELECT count(manager_name) FROM manager WHERE manager_works_in = companyName) as numEmployees
-			FROM company) as uf
-			WHERE (uf.numCityCovered BETWEEN 0 AND 100) AND (uf.numTheaters BETWEEN 0 AND 100) AND (uf.numEmployees BETWEEN 0 AND 100)
-			GROUP BY companyName
-			ORDER BY i_sortDirection, i_sortBy
+    	CREATE TABLE AdFilterCom
+			SELECT companyName, numCityCovered, numTheaters, numEmployees FROM
+				(SELECT *,
+				(SELECT count(DISTINCT theater_city, theater_state) FROM theater WHERE theater_owned_by = companyName) as numCityCovered,
+				(SELECT count(theater_name) FROM theater WHERE theater_owned_by = companyName) as numTheaters,
+				(SELECT count(manager_name) FROM manager WHERE manager_works_in = companyName) as numEmployees
+				FROM company) as uf
+				WHERE (uf.numCityCovered BETWEEN 0 AND 100) AND (uf.numTheaters BETWEEN 0 AND 100) AND (uf.numEmployees BETWEEN 0 AND 100);
 END ;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
