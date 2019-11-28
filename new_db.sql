@@ -483,7 +483,8 @@ BEGIN
 DROP TABLE IF EXISTS AdFilterUser;
 CREATE TABLE AdFilterUser
 SELECT user_name as username, (SELECT count(creditcard_num) FROM creditcard WHERE creditcard_owner=user_name) as creditCardCount, user_status as status
-FROM user;
+FROM user
+where (user_name=i_username or i_username= 'ALL' or i_username='') and (user_status = i_status or i_status= 'ALL' or i_status='');
 
 ALTER TABLE AdFilterUser
 ADD userType ENUM('User','Customer', 'Admin', 'Manager', 'CustomerManager',
