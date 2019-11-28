@@ -1040,7 +1040,7 @@ DROP TABLE IF EXISTS UserLogin;
 CREATE TABLE UserLogin
 SELECT user_name as username, user_status as status, user_password
 FROM user WHERE ((user_name = i_username AND user_status= ("APPROVED") AND user_password = i_password ) OR
-(user_name = i_username AND user_status <> ("APPROVED") AND user_password ="" ));
+(user_name = i_username AND user_status <> ("APPROVED")));
 
 ALTER TABLE UserLogin ADD isCustomer ENUM('1','0') NOT NULL;
 ALTER TABLE UserLogin ADD isManager ENUM('1','0') NOT NULL;
