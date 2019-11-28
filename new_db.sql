@@ -453,14 +453,15 @@ IN i_maxCity INT, IN i_minTheater INT, IN i_maxTheater INT, IN i_minEmployee INT
 BEGIN
     	DROP TABLE IF EXISTS AdFilterCom;
     	CREATE TABLE AdFilterCom
-			SELECT companyName, numCityCovered, numTheaters, numEmployees FROM
+			SELECT companyName as comName, numCityCovered as numCityCover, numTheaters as numTheater, numEmployees as numEmployee FROM
 				(SELECT *,
 				(SELECT count(DISTINCT theater_city, theater_state) FROM theater WHERE theater_owned_by = companyName) as numCityCovered,
 				(SELECT count(theater_name) FROM theater WHERE theater_owned_by = companyName) as numTheaters,
 				(SELECT count(manager_name) FROM manager WHERE manager_works_in = companyName) as numEmployees
 				FROM company) as uf
-				WHERE (uf.numCityCovered BETWEEN 0 AND 100) AND (uf.numTheaters BETWEEN 0 AND 100) AND (uf.numEmployees BETWEEN 0 AND 100);
+				WHERE (((uf.numCityCovered BETWEEN i_minCity AND i_maxCity) or (i_minCity is null or i_minCity='' or i_maxCity is null or i_maxCity='' )) AND ((uf.numTheaters BETWEEN i_minTheater AND i_maxTheater) or (i_minTheater is null or i_minTheater='' or i_maxTheater is null or i_maxTheater='' ) ) AND ((uf.numEmployees BETWEEN i_minEmployee AND i_maxEmployee ) or (i_minEmployee is null or i_minEmployee='' or i_maxEmployee is null or i_maxEmployee='' )) and (i_comName = companyName or i_comName is null or  i_comName='')) or (i_comName= 'ALL') ;
 END ;;
+
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
 /*!50003 SET character_set_client  = @saved_cs_client */ ;
