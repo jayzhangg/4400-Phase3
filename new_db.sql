@@ -181,7 +181,7 @@ CREATE TABLE `manager` (
 
 LOCK TABLES `manager` WRITE;
 /*!40000 ALTER TABLE `manager` DISABLE KEYS */;
-INSERT INTO `manager` VALUES ('calcultron','123 Peachtree St','Atlanta','30308','GA','EZ Theater Company'),('entropyRox','200 Cool Place','San Francisco','94016','CA','4400 Theater Company'),('fatherAI','456 Main St','New York','10001','NY','EZ Theater Company'),('georgep','10 Pearl Dr','Seattle','98105','WA','4400 Theater Company'),('ghcghc','100 Pi St','Pallet Town','31415','KS','AI Theater Company'),('imbatman','800 Color Dr','Austin','78653','TX','Awesome Theater Company'),('manager1','123 Ferst Drive','Atlanta','30332','GA','4400 Theater Company'),('manager2','456 Ferst Drive','Atlanta','30332','GA','AI Theater Company'),('manager3','789 Ferst Drive','Atlanta','30332','GA','4400 Theater Company'),('manager4','000 Ferst Drive','Atlanta','30332','GA','4400 Theater Company'),('radioactivePoRa','100 Blu St','Sunnyvale','94088','CA','4400 Theater Company');
+INSERT INTO `manager` VALUES ('calcultron','123 Peachtree St','Atlanta','30308','GA','EZ Theater Company'),('entropyRox','200 Cool Place','San Francisco ','94016','CA','4400 Theater Company'),('fatherAI','456 Main St','New York','10001','NY','EZ Theater Company'),('georgep','10 Pearl Dr','Seattle','98105','WA','4400 Theater Company'),('ghcghc','100 Pi St','Pallet Town','31415','KS','AI Theater Company'),('imbatman','800 Color Dr','Austin','78653','TX','Awesome Theater Company'),('manager1','123 Ferst Drive','Atlanta','30332','GA','4400 Theater Company'),('manager2','456 Ferst Drive','Atlanta','30332','GA','AI Theater Company'),('manager3','789 Ferst Drive','Atlanta','30332','GA','4400 Theater Company'),('manager4','000 Ferst Drive','Atlanta','30332','GA','4400 Theater Company'),('radioactivePoRa','100 Blu St','Sunnyvale','94088','CA','4400 Theater Company');
 /*!40000 ALTER TABLE `manager` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -280,7 +280,7 @@ CREATE TABLE `theater` (
 
 LOCK TABLES `theater` WRITE;
 /*!40000 ALTER TABLE `theater` DISABLE KEYS */;
-INSERT INTO `theater` VALUES ('4400 Theater Company','Cinema Star','100 Cool Place','San Francisco','CA','94016',4,'entropyRox'),('4400 Theater Company','Jonathan\'s Movies','67 Pearl Dr','Seattle','WA','98101',2,'georgep'),('4400 Theater Company','Star Movies','4400 Rocks Ave','Boulder','CA','80301',5,'radioactivePoRa'),('AI Theater Company','ML Movies','314 Pi St','Pallet Town','KS','31415',3,'ghcghc'),('Awesome Theater Company','ABC Theater','880 Color Dr','Austin','TX','73301',5,'imbatman'),('EZ Theater Company','Main Movies','123 Main St','New York','NY','10001',3,'fatherAI'),('EZ Theater Company','Star Movies','745 GT St','Atlanta','GA','30332',2,'calcultron');
+INSERT INTO `theater` VALUES ('4400 Theater Company','Cinema Star','100 Cool Place','San Francisco ','CA','94016',4,'entropyRox'),('4400 Theater Company','Jonathan\'s Movies','67 Pearl Dr','Seattle','WA','98101',2,'georgep'),('4400 Theater Company','Star Movies','4400 Rocks Ave','Boulder','CA','80301',5,'radioactivePoRa'),('AI Theater Company','ML Movies','314 Pi St','Pallet Town','KS','31415',3,'ghcghc'),('Awesome Theater Company','ABC Theater','880 Color Dr','Austin','TX','73301',5,'imbatman'),('EZ Theater Company','Main Movies','123 Main St','New York','NY','10001',3,'fatherAI'),('EZ Theater Company','Star Movies','745 GT St','Atlanta','GA','30332',2,'calcultron');
 /*!40000 ALTER TABLE `theater` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -600,7 +600,22 @@ DELIMITER ;
 DELIMITER ;;
 CREATE DEFINER=`root`@`localhost` PROCEDURE `admin_view_comDetail_th`(IN i_comName VARCHAR(50))
 BEGIN
-    	DROP VIEW IF EXISTS AdComDetailTh;
+DROP TABLE IF EXISTS theater_manager;
+CREATE TABLE theater_manager
+SELECT manager_name, manager_works_in, theater_name, theater_managed_by, theater_city, theater_state,theater_capacity
+FROM theater
+NATURAL JOIN manager 
+WHERE manager_name = theater_managed_by;
+
+
+DROP TABLE IF EXISTS AdComDetailTh;
+CREATE TABLE AdComDetailTh
+SELECT DISTINCT theater_name as thName, theater_managed_by as thManagerUsername, theater_city as thCity, theater_state as thState, theater_capacity as thCapacity
+from theater_manager
+where manager_works_in=i_comName;
+
+ /*
+   	DROP VIEW IF EXISTS AdComDetailTh;
     	CREATE VIEW AdComDetailTh
     	AS SELECT manager_name as thManagerUsername, theater_name as thName, theater_city as thCity, theater_state as thState, theater_capacity as thCapacity,
 theater_managed_by, theater_owned_by
@@ -610,6 +625,7 @@ INNER JOIN theater ON manager_name = theater_managed_by;
     	SELECT thName, thManagerUsername, thCity,  thState, thCapacity
     	FROM AdComDetailTh
     	WHERE theater_owned_by = i_comName;
+*/
 END ;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
