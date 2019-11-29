@@ -430,7 +430,7 @@ BEGIN
 	THEN 
 	UPDATE user	
 	SET user_status = "Declined"
-WHERE user_name = i_username;
+WHERE user_name = i_username and user_status <> "Approved";
 END IF;
 END ;;
 DELIMITER ;
@@ -642,10 +642,14 @@ DELIMITER ;
 /*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
 CREATE DEFINER=`root`@`localhost` PROCEDURE `customer_add_creditcard`(IN i_username VARCHAR(50), IN i_creditCardNum CHAR(16))
+if length(i_creditCardNum)=16 and 
+(select nm from (select creditcard_owner,count(creditcard_num) as nm  from CreditCard group by creditcard_owner) as df where creditcard_owner=i_username)<5 
+then 
 BEGIN
     	INSERT INTO CreditCard(creditcard_owner, creditcard_num)
 VALUES (i_username, i_creditCardNum);
-END ;;
+END ;
+end if;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
 /*!50003 SET character_set_client  = @saved_cs_client */ ;
@@ -681,124 +685,9 @@ and (theater_city=i_city or i_city= 'ALL' or i_city='')
 and (theater_state=i_state or i_state= 'ALL' or i_state='') 		
 AND (  i_minMovPlayDate IS NULL OR play_date >= i_minMovPlayDate)
 AND ( i_maxMovPlayDate IS NULL OR play_date <= i_maxMovPlayDate)
-
+AND ( play_date >= play_release_date)
 ;
 
-
-    
-/*
-IF (i_movName = 'ALL' and i_comName = 'ALL') THEN
-        IF (i_minMovPlayDate IS NULL and i_maxMovPlayDate IS NULL) THEN
-			DROP TABLE IF EXISTS CosFilterMovie;
-			CREATE TABLE CosFilterMovie
-            SELECT play_movie_name AS movName, theater_name AS thName, theater_street AS thStreet,
-            theater_city AS thCity, theater_state AS thState, theater_zipcode AS thZipcode,
-            theater_owned_by AS comName, play_date AS movPlayDate, 
-            play_release_date AS movReleaseDate
-            FROM theater INNER JOIN movieplay on play_theater_name=theater_name 
-            AND play_owning_company_name=theater_owned_by 
-            WHERE (theater_city = i_city OR i_city = '')
-            AND (theater_state = i_state OR i_state = '');
-        ELSE
-			DROP TABLE IF EXISTS CosFilterMovie;
-			CREATE TABLE CosFilterMovie
-            SELECT play_movie_name AS movName, theater_name AS thName, theater_street AS thStreet,
-            theater_city AS thCity, theater_state AS thState, theater_zipcode AS thZipcode,
-            theater_owned_by AS comName, play_date AS movPlayDate, 
-            play_release_date AS movReleaseDate
-            FROM theater INNER JOIN movieplay on play_theater_name=theater_name
-            AND play_owning_company_name=theater_owned_by 
-            WHERE (theater_city = i_city OR i_city = '')
-            AND (theater_state = i_state OR i_state = '')
-            AND play_date >= i_minMovPlayDate 
-            AND play_date <= i_maxMovPlayDate;
-		END IF;
-    ELSEIF (i_movName ='ALL') THEN
-        IF (i_minMovPlayDate IS NULL and i_maxMovPlayDate IS NULL) THEN
-			DROP TABLE IF EXISTS CosFilterMovie;
-			CREATE TABLE CosFilterMovie
-			SELECT play_movie_name AS movName, theater_name AS thName, theater_street AS thStreet,
-            theater_city AS thCity, theater_state AS thState, theater_zipcode AS thZipcode,
-            theater_owned_by AS comName, play_date AS movPlayDate, 
-            play_release_date AS movReleaseDate
-            FROM theater INNER JOIN movieplay on play_theater_name=theater_name 
-            AND play_owning_company_name=theater_owned_by 
-            WHERE (theater_city = i_city OR i_city = '')
-            AND (theater_state = i_state OR i_state = '')
-            AND theater_owned_by= i_comName;
-        ELSE
-			DROP TABLE IF EXISTS CosFilterMovie;
-			CREATE TABLE CosFilterMovie
-            SELECT play_movie_name AS movName, theater_name AS thName, theater_street AS thStreet,
-            theater_city AS thCity, theater_state AS thState, theater_zipcode AS thZipcode,
-            theater_owned_by AS comName, play_date AS movPlayDate, 
-            play_release_date AS movReleaseDate
-            FROM theater 
-            INNER JOIN movieplay on play_theater_name=theater_name 
-            AND play_owning_company_name=theater_owned_by 
-            WHERE  (theater_city = i_city OR i_city = '')
-            AND (theater_state = i_state OR i_state = '')
-            AND play_date BETWEEN i_minMovPlayDate AND i_maxMovPlayDate
-            AND theater_owned_by= i_comName;
-		END IF;
-    ELSEIF (i_comName ='ALL') THEN
-        IF (i_minMovPlayDate IS NULL and i_maxMovPlayDate IS NULL) THEN
-            DROP TABLE IF EXISTS CosFilterMovie;
-			CREATE TABLE CosFilterMovie
-            SELECT play_movie_name AS movName, theater_name AS thName, theater_street AS thStreet,
-            theater_city AS thCity, theater_state AS thState, theater_zipcode AS thZipcode,
-            theater_owned_by AS comName, play_date AS movPlayDate, 
-            play_release_date AS movReleaseDate
-            FROM theater INNER JOIN movieplay on play_theater_name=theater_name 
-            AND play_owning_company_name=theater_owned_by 
-            WHERE  (theater_city = i_city OR i_city = '')
-            AND (theater_state = i_state OR i_state = '')
-            AND play_movie_name= i_movName;
-        ELSE
-            DROP TABLE IF EXISTS CosFilterMovie;
-			CREATE TABLE CosFilterMovie
-            SELECT play_movie_name AS movName, theater_name AS thName, theater_street AS thStreet,
-            theater_city AS thCity, theater_state AS thState, theater_zipcode AS thZipcode,
-            theater_owned_by AS comName, play_date AS movPlayDate, 
-            play_release_date AS movReleaseDate
-            FROM theater INNER JOIN movieplay on play_theater_name=theater_name 
-            AND play_owning_company_name=theater_owned_by 
-            WHERE  (theater_city = i_city OR i_city = '')
-            AND (theater_state = i_state OR i_state = '')
-            AND play_date BETWEEN i_minMovPlayDate AND i_maxMovPlayDate
-            AND play_movie_name= i_movName;
-		END IF;
-    ELSE
-        IF (i_minMovPlayDate IS NULL AND i_maxMovPlayDate IS NULL) THEN
-            DROP TABLE IF EXISTS CosFilterMovie;
-			CREATE TABLE CosFilterMovie
-            SELECT play_movie_name AS movName, theater_name AS thName, theater_street AS thStreet,
-            theater_city AS thCity, theater_state AS thState, theater_zipcode AS thZipcode,
-            theater_owned_by AS comName, play_date AS movPlayDate, 
-            play_release_date AS movReleaseDate
-            FROM theater INNER JOIN movieplay on play_theater_name=theater_name 
-            AND play_owning_company_name=theater_owned_by 
-            WHERE  (theater_city = i_city OR i_city = '')
-            AND (theater_state = i_state OR i_state = '')
-            AND theater_owned_by=i_comName
-            AND play_movie_name=i_movName;
-        ELSE 
-			DROP TABLE IF EXISTS CosFilterMovie;
-			CREATE TABLE CosFilterMovie
-            SELECT play_movie_name AS movName, theater_name AS thName, theater_street AS thStreet,
-            theater_city AS thCity, theater_state AS thState, theater_zipcode AS thZipcode,
-            theater_owned_by AS comName, play_date AS movPlayDate, 
-            play_release_date AS movReleaseDate
-            FROM theater INNER JOIN movieplay on play_theater_name=theater_name 
-            AND play_owning_company_name=theater_owned_by 
-            WHERE t (theater_city = i_city OR i_city = '')
-            AND (theater_state = i_state OR i_state = '')
-            AND play_date BETWEEN i_minMovPlayDate AND i_maxMovPlayDate
-            AND theater_owned_by=i_comName
-            AND play_movie_name=i_movName;
-		END IF;
-	END IF;
-*/
 END ;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -850,7 +739,9 @@ BEGIN
     used_play_date as movPlayDate
 	FROM creditcard
     INNER JOIN creditcardUsage on used_creditcard_num = creditcard_num
-    WHERE creditcard_owner =  i_cusUsername;
+    WHERE creditcard_owner =  i_cusUsername
+    having (select nm from (select used_play_date,count(distinct(used_movie_name)) as nm  from creditcardUsage group by used_play_date) as df where used_play_date='2010-04-02') <4
+    ;
 
 END ;;
 DELIMITER ;
@@ -877,7 +768,7 @@ SET @movi= (SELECT play_movie_name from movieplay
 WHERE (play_movie_name= i_movName) AND (play_theater_name=i_thName) AND (play_release_date= i_movReleaseDate) AND (play_date=i_movPlayDate) AND (play_owning_company_name=i_comName)   );
 
 
-IF (@card IS NOT NULL and @movi is not null)
+IF (@card IS NOT NULL and @movi is not null) and (select nm from (select used_play_date,count(distinct(used_movie_name)) as nm  from creditcardUsage group by used_play_date) as df where used_play_date='2010-04-02' )<3
 THEN
 INSERT INTO creditcardUsage (used_creditcard_num,
 used_movie_name, used_release_date, used_theater_name, used_owning_company_name, used_play_date)
@@ -932,10 +823,15 @@ DELIMITER ;
 DELIMITER ;;
 CREATE DEFINER=`root`@`localhost` PROCEDURE `manager_customer_add_creditcard`(IN i_username VARCHAR(50), IN
 i_creditCardNum CHAR(16))
+if length(i_creditCardNum)=16 and
+(select nm from (select creditcard_owner,count(creditcard_num) as nm  from CreditCard group by creditcard_owner) as df where creditcard_owner=i_username)<5 
+ then
 BEGIN
     	INSERT INTO CreditCard(creditcard_owner, creditcard_num)
 VALUES (i_username, i_creditCardNum);
-END ;;
+
+END ;
+end if;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
 /*!50003 SET character_set_client  = @saved_cs_client */ ;
@@ -1111,16 +1007,31 @@ DELIMITER ;
 DELIMITER ;;
 CREATE DEFINER=`root`@`localhost` PROCEDURE `user_filter_th`(IN i_thName VARCHAR(50), IN i_comName
 VARCHAR(50), IN i_city VARCHAR(50), IN i_state VARCHAR(3))
+
 BEGIN
-		
+/*
+    DROP TABLE IF EXISTS UserFilterTh;
+    CREATE TABLE UserFilterTh
+SELECT theater_name AS thName, theater_street AS thStreet, theater_city as thCity, theater_state AS thState, theater_zipcode AS thZipcode, theater_owned_by as comName 
+    FROM Theater
+    WHERE 
+(theater_name = i_thName OR i_thName = "ALL") AND
+        (theater_owned_by = i_comName OR i_comName = "ALL") AND
+        (theater_city = i_city OR i_city = "") AND
+        (theater_state = i_state OR i_state = "ALL");
+
+
+*/		
     IF (i_thName = 'ALL' and i_comName = 'ALL' ) THEN
 		DROP TABLE IF EXISTS UserFilterTh;
         CREATE TABlE UserFilterTh
         SELECT theater_name AS thName, theater_street AS thStreet, theater_city AS thCity, 
         theater_state AS thState, theater_zipcode AS thZipcode, 
         theater_owned_by AS comName 
-        FROM theater 
-        WHERE (theater_state = i_state OR i_state = '')
+        FROM theater left join manager on theater_owned_by=manager_works_in
+        WHERE (theater_state = i_state OR i_state = '') AND
+         (theater_owned_by=manager_works_in and theater_managed_by=manager_name) and 
+        (theater_owned_by = i_comName OR i_comName = "ALL") 
         AND (theater_city = i_city OR i_city = '');
         
     ELSEIF i_thName = 'ALL' THEN
@@ -1129,9 +1040,10 @@ BEGIN
 		SELECT  theater_name AS thName, theater_street AS thStreet, theater_city AS thCity, 
 		theater_state AS thState, theater_zipcode AS thZipcode, 
         theater_owned_by AS comName 
-        FROM theater 
+        FROM theater inner join manager on theater_owned_by=manager_works_in
         WHERE theater_owned_by=i_comName
-	    AND (theater_state = i_state OR i_state = '')
+	    AND (theater_state = i_state OR i_state = '') and
+         (theater_owned_by=manager_works_in and theater_managed_by=manager_name)  
         AND (theater_city = i_city OR i_city = '');
         
     ELSEIF i_comName = 'ALL' THEN
@@ -1140,10 +1052,12 @@ BEGIN
        SELECT theater_name AS thName, theater_street AS thStreet, theater_city AS thCity, 
        theater_state AS thState, theater_zipcode AS thZipcode, 
        theater_owned_by AS comName 
-       FROM theater 
+       FROM theater inner join manager on theater_owned_by=manager_works_in
        WHERE theater_name=i_thName
        AND (theater_state = i_state OR i_state = '')
-	   AND (theater_city = i_city OR i_city = '');
+	   AND (theater_city = i_city OR i_city = '')
+       and (theater_owned_by=manager_works_in and theater_managed_by=manager_name)  
+       ;
        
     ELSE
 		DROP TABLE IF EXISTS UserFilterTh;
@@ -1151,12 +1065,15 @@ BEGIN
 		SELECT theater_name AS thName, theater_street AS thStreet, theater_city AS thCity,
         theater_state AS thState, theater_zipcode AS thZipcode, 
         theater_owned_by AS comName 
-        FROM theater 
+        FROM theater inner join manager on theater_owned_by=manager_works_in
         WHERE theater_name = i_thName
         AND theater_owned_by= i_comName
         AND (theater_state = i_state OR i_state = '')
-        AND (theater_city = i_city OR i_city = '');
+        AND (theater_city = i_city OR i_city = '')
+        and (theater_owned_by=manager_works_in and theater_managed_by=manager_name)  
+        ;
 	END IF;
+
 END ;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -1176,16 +1093,28 @@ DELIMITER ;;
 CREATE DEFINER=`root`@`localhost` PROCEDURE `user_filter_visitHistory`(IN i_username VARCHAR(50), IN
 i_minVisitDate DATE, IN i_maxVisitDate DATE)
 BEGIN
+    if (i_minVisitDate IS NULL and i_maxVisitDate is null) then
 	DROP TABLE IF EXISTS UserVisitHistory;
 	CREATE TABLE UserVisitHistory
 	SELECT theater_name as thName, theater_street as thStreet, theater_city as thCity, theater_state as thState, theater_zipcode as thZipcode,
-theater_owned_by as comName, visit_date as visitDate
+theater_owned_by as comName, visit_date as visitDate,visit_username
 	FROM visit
-	NATURAL JOIN theater
+	left JOIN theater on visit_theater=theater_name
+	WHERE(visit_username = i_username) AND visit_date= (select max(visit_date) from visit);
+    else
+	DROP TABLE IF EXISTS UserVisitHistory;
+	CREATE TABLE UserVisitHistory
+	SELECT theater_name as thName, theater_street as thStreet, theater_city as thCity, theater_state as thState, theater_zipcode as thZipcode,
+theater_owned_by as comName, visit_date as visitDate, visit_username
+	FROM visit
+	left JOIN theater on visit_theater=theater_name
 	WHERE(visit_username = i_username) AND
     	(i_minVisitDate IS NULL OR visit_date >= i_minVisitDate) AND
     	(i_maxVisitDate IS NULL OR visit_date <= i_maxVisitDate);
-	END ;;
+        
+    end if;
+END ;;
+
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
 /*!50003 SET character_set_client  = @saved_cs_client */ ;
