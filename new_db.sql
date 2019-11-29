@@ -913,11 +913,12 @@ BEGIN
 SET @countUser = (SELECT count(*) FROM user WHERE user_name=i_username);
 SET @countCustomer = (SELECT count(*) FROM customer WHERE customer_name=i_username);
 SET @countManager = (
-SELECT * FROM manager 
-WHERE manager_street = i_empStreets 
+SELECT count(*) FROM manager 
+WHERE manager_street = i_empStreet 
+and manager_name=i_username
 AND manager_city = i_empCity
 AND manager_zipcode = i_empZipcode
-AND manager_state = i_empStreet);
+AND manager_state = i_empState);
 
 SET @man_address  = (SELECT COUNT(*) FROM manager 
 WHERE (i_empStreet = manager_street)
@@ -1006,15 +1007,12 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `manager_only_register`(IN i_usernam
 VARCHAR(50), IN i_firstname VARCHAR(50), IN i_lastname VARCHAR(50), IN i_comName VARCHAR(50), IN i_empStreet VARCHAR(50), IN i_empCity VARCHAR(50), IN i_empState CHAR(2), IN i_empZipcode CHAR(5))
 
 BEGIN
-SET @countUser = (SELECT * FROM user WHERE user_name=i_username);
+SET @countUser = (SELECT count(*) FROM user WHERE user_name=i_username);
 SET @countManager = (
-SELECT * FROM manager 
-WHERE manager_street = i_empStreets 
-AND manager_city = i_empCity
-AND manager_zipcode = i_empZipcode
-AND manager_state = i_empStreet);
+SELECT count(*) FROM manager 
+WHERE manager_name=i_username);
 
-IF @countUse  = 0 THEN
+IF @countUser  = 0 THEN
 INSERT INTO user(user_name, user_password, user_firstname, user_lastname,
 user_status)
 VALUES (i_username, MD5(i_password), i_firstname, i_lastname, "Pending");
