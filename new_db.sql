@@ -664,8 +664,29 @@ DELIMITER ;;
 CREATE DEFINER=`root`@`localhost` PROCEDURE `customer_filter_mov`
 (IN i_movName VARCHAR(50),IN i_comName VARCHAR(50), 
 IN i_city VARCHAR(50), IN i_state VARCHAR(50), 
-IN i_minMovPlayDate DATE, IN i_maxMovPlayDate DATE)
+IN i_minMovPlayDate DATE , IN i_maxMovPlayDate DATE )
 BEGIN
+
+DROP TABLE IF EXISTS CosFilterMovie;
+CREATE TABLE CosFilterMovie
+SELECT DISTINCT play_movie_name AS movName, theater_name AS thName, theater_street AS thStreet,
+            theater_city AS thCity, theater_state AS thState, theater_zipcode AS thZipcode,
+            theater_owned_by AS comName, play_date AS movPlayDate, 
+            play_release_date AS movReleaseDate
+FROM movieplay inner join theater on play_theater_name=theater_name
+where THEATER_OWNED_BY=play_owning_company_name and
+(theater_owned_by=i_comName or i_comName= 'ALL' or i_comName='') 
+and (play_movie_name=i_movName or i_movName= 'ALL' or i_movName='') 
+and (theater_city=i_city or i_city= 'ALL' or i_city='') 
+and (theater_state=i_state or i_state= 'ALL' or i_state='') 		
+AND (  i_minMovPlayDate IS NULL OR play_date >= i_minMovPlayDate)
+AND ( i_maxMovPlayDate IS NULL OR play_date <= i_maxMovPlayDate)
+
+;
+
+
+    
+/*
 IF (i_movName = 'ALL' and i_comName = 'ALL') THEN
         IF (i_minMovPlayDate IS NULL and i_maxMovPlayDate IS NULL) THEN
 			DROP TABLE IF EXISTS CosFilterMovie;
@@ -777,6 +798,7 @@ IF (i_movName = 'ALL' and i_comName = 'ALL') THEN
             AND play_movie_name=i_movName;
 		END IF;
 	END IF;
+*/
 END ;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
