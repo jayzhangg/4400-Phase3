@@ -957,16 +957,16 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `manager_filter_th`(IN i_manUsername
 VARCHAR(50), IN i_minMovDuration INT, IN i_maxMovDuration INT, IN i_minMovieReleaseDate DATE, IN i_maxMovieReleaseDate DATE, IN i_minMovPlayDate DATE, IN i_maxMovPlayDate DATE,
 IN i_includeNotPlay BOOLEAN)
 BEGIN
-	IF (i_includeNotPlay IS NULL OR (i_includeNotPlay IS FALSE))
+	IF (i_includeNotPlay IS NULL OR (i_includeNotPlay IS false))
 	THEN
 		DROP TABLE IF EXISTS ManFilterTh;
 		CREATE TABLE ManFilterTh
-		SELECT distinct play_movie_name AS movName, play_release_date AS movReleaseDate, play_date AS movPlayDate, movie_duration AS movDuration
-		from (movie cross join theater) left join movieplay on movie_name=play_movie_name and play_theater_name=theater_name
+		SELECT distinct movie_name AS movName, movie_release_date AS movReleaseDate, play_date AS movPlayDate, movie_duration AS movDuration
+		from (movie cross join theater) left join movieplay on movie_name=play_movie_name and play_theater_name=theater_name left join manager on manager_works_in=theater_owned_by
 
         
 		WHERE (theater_managed_by = i_manUsername
-        AND play_theater_name=THEATER_NAME
+
 		AND (i_minMovDuration IS NULL OR movie_duration >= i_minMovDuration)
 		AND (i_maxMovDuration IS NULL OR movie_duration <= i_maxMovDuration)
 		AND (i_minMovieReleaseDate IS NULL OR movie_release_date >= i_minMovieReleaseDate)
@@ -975,10 +975,10 @@ BEGIN
 	ELSE
 		DROP TABLE IF EXISTS ManFilterTh;
 		CREATE TABLE ManFilterTh
-		SELECT distinct play_movie_name AS movName, play_release_date AS movReleaseDate, play_date AS movPlayDate, movie_duration AS movDuration
-		from (movie cross join theater) left join movieplay on movie_name=play_movie_name and play_theater_name=theater_name
+		SELECT distinct movie_name AS movName, movie_release_date AS movReleaseDate, play_date AS movPlayDate, movie_duration AS movDuration
+		from (movie cross join theater) left join movieplay on movie_name=play_movie_name and play_theater_name=theater_name left join manager on manager_works_in=theater_owned_by
         WHERE (theater_managed_by = i_manUsername
-		AND  (movie_release_date = play_release_date)
+		and play_date is null
 		AND (i_minMovDuration IS NULL OR movie_duration >= i_minMovDuration)
 		AND (i_maxMovDuration IS NULL OR movie_duration <= i_maxMovDuration)
 		AND (i_minMovieReleaseDate IS NULL OR movie_release_date >= i_minMovieReleaseDate)
@@ -1221,7 +1221,7 @@ BEGIN
     theater_state as thState, theater_zipcode as thZipcode,
     theater_owned_by as comName, visit_date as visitDate,visit_username
 	FROM visit
-	left JOIN theater on visit_theater=theater_name
+	left JOIN theater on (visit_theater=theater_name and visit_company=theater_owned_by)
 	WHERE(visit_username = i_username);
     -- AND visit_date= (select max(visit_date) from visit);
     ELSE
@@ -1231,10 +1231,10 @@ BEGIN
     theater_state as thState, theater_zipcode as thZipcode,
     theater_owned_by as comName, visit_date as visitDate, visit_username
 	FROM visit
-	left JOIN theater on visit_theater=theater_name
+	left JOIN theater on (visit_theater=theater_name and visit_company=theater_owned_by)
 	WHERE(visit_username = i_username) AND
-	(visit_date >= i_minVisitDate) AND
-	(visit_date <= i_maxVisitDate);
+	(i_minVisitDate is null or visit_date >= i_minVisitDate) AND
+	(i_maxVisitDate is null or visit_date <= i_maxVisitDate);
     END IF;
 END ;;
 
@@ -1336,8 +1336,10 @@ DELIMITER ;
 DELIMITER ;;
 CREATE DEFINER=`root`@`localhost` PROCEDURE `user_visit_th`(IN i_thName VARCHAR(50), IN i_comName VARCHAR(50),
 IN i_visitDate DATE, IN i_username VARCHAR(50))
-if (select nm from (select visit_theater,count(visit_date) as nm  from visit group by visit_theater) as df where visit_theater=i_thName)<  
-(select cap from (select theater_name, theater_owned_by, theater_capacity as cap  from theater) as df2 where theater_name=i_thName and theater_owned_by=i_comName)
+if
+(select nm from (select play_theater_name,play_date, play_owning_company_name, count(play_movie_name) as nm  from movieplay group by play_theater_name,play_owning_company_name, play_date)
+ as df where play_theater_name='Star Movies' and play_date='2010-03-25' and play_owning_company_name= 'EZ Theater Company') <
+ (select cap from (select theater_name, theater_owned_by, theater_capacity as cap  from theater) as df2 where theater_name=i_thName and theater_owned_by=i_comName)
 then
 BEGIN
 	INSERT INTO visit (visit_theater, visit_company, visit_date, visit_username)
